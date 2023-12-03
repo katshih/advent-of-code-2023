@@ -1,3 +1,4 @@
 [submodule "Inputs"]
 	path = Inputs
 	url = git@github.com:katshih/advent-of-code-2023-inputs.git
+	branch = main
