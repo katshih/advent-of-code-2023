@@ -2,8 +2,37 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <stack>
 #include <limits>
 #include <algorithm>
+
+// this gets the right answer, but I think there is still an off-by-one in the range selection
+
+std::vector<std::vector<long>> mergeIntervals(std::vector<std::vector<long>> ranges){
+    std::sort(ranges.begin(), ranges.end());
+
+    std::stack<std::vector<long>> output_stack;
+    output_stack.push(ranges[0]);
+
+    for(int ii = 1; ii < ranges.size(); ii++){
+        std::vector<long> curr = ranges[ii];
+
+        if(curr[0] <= output_stack.top()[1] + 1){
+            output_stack.top()[1] = std::max(output_stack.top()[1], curr[1]);
+        }
+        else{
+            output_stack.push(curr);
+        }
+    }
+
+    std::vector<std::vector<long>> output_merged;
+    while(!output_stack.empty()){
+        output_merged.insert(output_merged.begin(), output_stack.top());
+        output_stack.pop();
+    }
+
+    return output_merged;
+}
 
 class piecewiseLine{
     public:
@@ -11,6 +40,7 @@ class piecewiseLine{
         //piecewiseLine(piecewiseLine lin_1, piecewiseLine lin_2);
 
         long evaluate(long input);
+        std::vector<std::vector<long>> evaluateRange(std::vector<std::vector<long>> input_ranges);
 
     private:
         std::vector<long> intervals_, constants_;
@@ -39,11 +69,6 @@ piecewiseLine::piecewiseLine(std::vector<std::vector<long>> map){
     intervals_ = intervals; constants_ = constants;
 }
 
-// PL from composition of two PLs
-//piecewiseLine::piecewiseLine(piecewiseLine lin_1, piecewiseLine lin_2){
-
-//}
-
 // evaluate a single value
 long piecewiseLine::evaluate(long input){
     // find interval
@@ -51,17 +76,51 @@ long piecewiseLine::evaluate(long input){
     return (input + constants_[idx]);
 }
 
+// evaluate a set of ranges
+std::vector<std::vector<long>> piecewiseLine::evaluateRange(std::vector<std::vector<long>> input_ranges){
+    std::vector<std::vector<long>> output;
+
+    for(auto &input : input_ranges){
+        long i_low = input[0], i_high = input[0];
+        while(i_high < input[1]){
+            int idx_lower = (int)(std::upper_bound(intervals_.begin(), intervals_.end(), i_low) - intervals_.begin()) - 1;
+            if((idx_lower + 1 != intervals_.size()) && intervals_[idx_lower + 1] <= input[1]){
+                i_high = intervals_[idx_lower + 1];
+            }
+            else{
+                i_high = input[1];
+            }
+
+            output.push_back(std::vector<long>{i_low + constants_[idx_lower], i_high + constants_[idx_lower]});
+            i_low = i_high;
+        }
+    }
+
+    // consolidate
+    return mergeIntervals(output);
+}
+
 int main(){
     std::ifstream input_file("./Inputs/input_05.txt");
     std::vector<piecewiseLine> atlas;
-    std::vector<long> seeds;
+    std::vector<std::vector<long>> seed_ranges;
 
     std::string line; std::getline(input_file, line);
     // read in seeds
+    bool s_flag = 1;
+    long range_start;
     int ii_s = line.find(' ') + 1, ii_e = ii_s;
     while(ii_e < line.length()){
         ii_e = line.find(' ', ii_s + 1);
-        seeds.push_back(stol(line.substr(ii_s, ii_e - ii_s)));
+        long num = stol(line.substr(ii_s, ii_e - ii_s));
+        if(s_flag){
+            range_start = num;
+            s_flag = 0;
+        }
+        else{
+            seed_ranges.push_back({range_start, range_start + num - 1});
+            s_flag = 1;
+        }
         ii_s = ii_e + 1;
     }
 
@@ -82,29 +141,22 @@ int main(){
     }
     atlas.push_back(piecewiseLine(map));
 
+    std::sort(seed_ranges.begin(), seed_ranges.end());
+    std::vector<std::vector<long>> output_ranges = seed_ranges;
 
+    //for(auto & o : output_ranges){
+    //std::cout << "Range [" << o[0] << ", " << o[1] << "]\n";
+    //}    
+    //std::cout << "\n";
 
+    for(auto &pl : atlas){
+        output_ranges = pl.evaluateRange(output_ranges);
+    //    for(auto & o : output_ranges){
+    //    std::cout << "Range [" << o[0] << ", " << o[1] << "]\n";
+    //    }
+    //    std::cout << "\n";    
+    }
 
-    //    go through seeds
-    // long min_loc = std::numeric_limits<long>::max(), curr_loc;
+    std::cout<<output_ranges[0][0];
 
-    // for(auto &s : seeds){
-    //     curr_loc = s;
-    //     std::cout << curr_loc << '\n';
-    //     for(auto &pl : atlas){
-    //         curr_loc = pl.evaluate(curr_loc);
-    //         std::cout << curr_loc << '\n';
-    //     }
-    //     if(curr_loc < min_loc){
-    //         min_loc = curr_loc;
-    //     }
-    //     std::cout<<'\n';
-    // }
-
-    // std::cout << min_loc;
-
-
-
-    // compose piecewise linear functions into one
-    // find minimum value over a range
 }
