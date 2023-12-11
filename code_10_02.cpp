@@ -3,9 +3,10 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <math.h>
 
 int main(){
-std::ifstream input_file("./Inputs/input_10_test.txt");
+std::ifstream input_file("./Inputs/input_10.txt");
 std::vector<std::vector<char>> pipe_map;
 std::vector<int> start_point;
 std::unordered_map<char, std::vector<std::vector<int>>> map_key({{'|', {{-1, 0}, {1, 0}}}, {'-', {{0, -1}, {0, 1}}},
@@ -56,35 +57,57 @@ while(!std::equal(start_point.begin(), start_point.begin() + 2, curr_point.begin
 }
 
 // now check for internal...maybe simple will work
+
+int sum = 0;
 for(int rr = 0; rr < pipe_map.size(); rr++){
     for(int cc = 0; cc < pipe_map[0].size(); cc++){
         if(loop_map[rr][cc] == 0){
+            std::unordered_map<char, int> seen;
 
             // look left
-            for(int jj = 0; jj < cc; cc ++){
-
+            for(int jj = 0; jj < cc; jj++){
+                if(loop_map[rr][jj] == 1){
+                    seen[pipe_map[rr][jj]] += 1;
+                }
             }
+            int left_interior = seen['|'] + std::min(seen['L'], seen['7']) + std::min(seen['F'], seen['J']);
 
             // look right
-
+            seen.clear();
+            for(int jj = cc + 1; jj < pipe_map[0].size(); jj++){
+                if(loop_map[rr][jj] == 1){
+                    seen[pipe_map[rr][jj]] += 1;
+                }
+            }
+            int right_interior = seen['|'] + std::min(seen['L'], seen['7']) + std::min(seen['F'], seen['J']);
 
             // look up
-
+            seen.clear();
+            for(int ii = 0; ii < rr; ii++){
+                if(loop_map[ii][cc] == 1){
+                    seen[pipe_map[ii][cc]] += 1;
+                }
+            }
+            int up_interior = seen['-'] + std::min(seen['L'], seen['7']) + std::min(seen['F'], seen['J']);
 
             // look down
+            seen.clear();
+            for(int ii = rr + 1; ii < pipe_map.size(); ii++){
+                if(loop_map[ii][cc] == 1){
+                    seen[pipe_map[ii][cc]] += 1;
+                }
+            }
+            int down_interior = seen['-'] + std::min(seen['L'], seen['7']) + std::min(seen['F'], seen['J']);
 
+            bool is_interior = (((left_interior % 2) & (right_interior % 2)) & ((up_interior % 2) & (down_interior % 2)));
+
+            sum += is_interior;
+
+            //std::cout<<"("<<rr<<", "<<cc<<"): [" << is_interior << "] " << left_interior << ", " << right_interior << ", " << up_interior << ", " << down_interior << "\n";
 
         }
     }
 }
-
-
-// for(std::vector<bool> v : loop_map){
-//     for(bool c : v){
-//         std::cout << c;
-//     }
-//     std::cout << '\n';
-// }
-
+std::cout << sum << "\n";
 
 }
